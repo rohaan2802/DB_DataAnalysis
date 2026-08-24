@@ -1,87 +1,120 @@
 # DB_DataAnalysis
 
-Database coursework spanning **ER modeling (draw.io)**, **T-SQL schema + analysis queries**, and exported **customer / order / product analysis CSVs**. Built around an Olist-style e-commerce schema (`ECOMMERCE`) plus NorthWind materials.
+Database coursework: **ER modeling (draw.io)**, **T-SQL** on an **Olist-style ECOMMERCE** schema (bulk load + cleaning + analysis), exported CSVs/PNGs, plus **NorthWind** practice files.
 
-**Author roll referenced in files:** i222327
-
----
-
-## Overview
-
-| Area | Contents |
-|------|----------|
-| **Assignment #01** | PDF brief, Word solution, ER diagrams (`.drawio` + PNG exports) |
-| **Assignment #02** | Full SQL script: create DB/tables, bulk load CSVs, cleaning, analytical queries; result CSVs under CUSTOMER / ORDER / PRODUCT ANALYSIS |
-| **NorthWind DataBase** | Additional NorthWind-related database practice assets |
-
-Assignment #02's `Assignment #02_SQL.sql` creates `ECOMMERCE`, defines `Customers`, `Orders`, and related tables with CHECKs/FKs, uses `BULK INSERT` from Olist CSVs, then runs analysis tasks whose outputs are saved as CSV screenshots/exports.
+**Roll:** i222327 · [rohaan2802](https://github.com/rohaan2802)
 
 ---
 
-## Features
+## Table of contents
 
-- Constrained DDL (non-empty IDs, order status enums, geolocation FKs)
-- Documented `BULK INSERT` patterns for CSV onboarding
-- Analysis folders with CSV results and PNG query evidence:
-  - `CUSTOMER ANALYSIS/`
-  - Order and product analysis counterparts inside the Assignment #02 tree
-- Visual ERDs for early modeling tasks
-
----
-
-## Repository structure
-
-```text
-DB_DataAnalysis/
-├── Assignment #01/
-│   ├── DB_Assignment#1.pdf
-│   ├── i222327_DB_Assignment#01.docx
-│   └── i222327_*_sec_A.drawio[.png]
-├── Assignment #02/
-│   ├── Assignment_2_i222327.zip
-│   └── Assignment_2_i222327/
-│       ├── Assignment #02_SQL.sql
-│       ├── CUSTOMER ANALYSIS/*.csv | *.png
-│       └── ... (order/product analysis exports)
-└── NorthWind DataBase/
-```
+1. [Assignment #01 — modeling](#assignment-01--modeling)
+2. [Assignment #02 — ECOMMERCE SQL](#assignment-02--ecommerce-sql)
+3. [Tables and constraints](#tables-and-constraints)
+4. [Bulk insert](#bulk-insert)
+5. [Analysis outputs](#analysis-outputs)
+6. [How to run](#how-to-run)
+7. [NorthWind](#northwind)
 
 ---
 
-## Build / run
+## Assignment #01 — modeling
 
-Requires **Microsoft SQL Server** (Express/Developer) and **SSMS** or `sqlcmd`.
+- `DB_Assignment#1.pdf` brief  
+- `i222327_DB_Assignment#01.docx`  
+- `i222327_*_sec_A.drawio` + PNG exports  
 
-1. Adjust `BULK INSERT` paths in `Assignment #02_SQL.sql` to your local Olist CSV locations (the script contains an author machine path - replace it).
-2. Execute batches in order (respect `GO` separators):
+Open `.drawio` in [diagrams.net](https://app.diagrams.net/).
+
+---
+
+## Assignment #02 — ECOMMERCE SQL
+
+**Script:** `Assignment #02_SQL.sql` (local copy `Assignment02.sql`)
+
+Creates database **`ECOMMERCE`**, then Task 1 **upload + cleaning**, then analytical `SELECT`s. Result CSVs/PNGs sit under `CUSTOMER ANALYSIS/` (and order/product sibling folders).
+
+Olist CSVs originally bulk-loaded from a machine path:
+
+`C:\Users\ALLEN PROGRAMMER\Downloads\olist_*_dataset.csv`
+
+**Replace every `BULK INSERT` path** before executing on your PC.
+
+---
+
+## Tables and constraints
+
+Order of creation matters (FKs). Observed objects:
+
+| Table | Keys / CHECKs |
+|-------|----------------|
+| `Geolocation` | Referenced by customers/sellers (composite zip+city+state) |
+| `Customers` | PK `customer_id` non-empty; unique id; zip `> 0`; FK geolocation **ON DELETE CASCADE** |
+| `Orders` | PK `order_id`; status **IN** `delivered, shipped, processing, canceled, unavailable, invoiced, created, approved`; nullable timestamps; CHECKs that approval ≥ purchase, carrier ≥ approval, customer delivery after carrier, estimate ≥ purchase |
+| `Order_Payments` | PK `(order_id, payment_sequential)`; types `credit_card, boleto, voucher, debit_card, not_defined`; installments `> 0`; value `≥ 0` |
+| `Products` | PK `product_id`; FK category translation; photos qty 0–50; dimensions `> 0` where set. Column name **`product_catery_name`** (typo vs “category”) matches the Olist dump |
+| `Sellers` | PK `seller_id`; FK geolocation |
+| `Order_Items` | line items: `price`, `freight_value` ≥ 0, `shipping_limit_date` |
+
+Further tables (reviews, translations, etc.) continue in the rest of the SQL file — execute the full script.
+
+`CODEPAGE = '65001'` (UTF-8), `KEEPNULLS`, `TABLOCK` on several bulk loads. Orders bulk insert also uses UTF-8; Customers insert in the extract may omit CODEPAGE — align if you see character errors.
+
+---
+
+## Bulk insert pattern
 
 ```sql
--- In SSMS: open Assignment #02_SQL.sql and Execute
--- Or:
+BULK INSERT Orders
+FROM 'D:\data\olist_orders_dataset.csv'
+WITH (
+    FORMAT = 'CSV',
+    FIELDTERMINATOR = ',',
+    ROWTERMINATOR = '\n',
+    FIRSTROW = 2,
+    CODEPAGE = '65001',
+    KEEPNULLS,
+    TABLOCK
+);
+```
+
+`GO` batches are required in SSMS.
+
+---
+
+## Analysis outputs
+
+After DDL/DML, run the analytical section and compare to:
+
+- `CUSTOMER ANALYSIS/*.csv` and `*.png`  
+- Order / product analysis folders in `Assignment_2_i222327/`
+
+Typical questions: orders by status, payment mix, revenue by state, delivery delay vs estimate, product category sales.
+
+---
+
+## How to run
+
+SQL Server Express/Developer + SSMS or `sqlcmd`:
+
+```bash
 sqlcmd -S .\SQLEXPRESS -E -i "Assignment #02/Assignment_2_i222327/Assignment #02_SQL.sql"
 ```
 
-3. Open Assignment #01 `.drawio` files in [diagrams.net](https://app.diagrams.net/) for ER review.
+1. Fix paths.  
+2. Run Geolocation (and translation tables) **before** Customers/Sellers/Products.  
+3. Only then run analysis `SELECT`s.
 
 ---
 
-## Usage
+## NorthWind
 
-- Run DDL/DML sections first; only then execute analytical `SELECT`s.
-- Compare query outputs to CSVs under `CUSTOMER ANALYSIS/` (and sibling folders).
-- Use Assignment #01 diagrams when documenting schema rationale in reports.
+`NorthWind DataBase/` — extra classic schema practice, separate from Olist.
 
----
-
-## Extending
-
-- Parameterize bulk-load paths via SQLCMD variables.
-- Add indexed views for frequent customer/order aggregations.
-- Port key analyses to a Jupyter + pandas notebook reading the same CSVs.
-- Normalize geolocation handling if source CSV quality varies.
+Olist / NorthWind retain upstream licenses.
 
 ---
 
-## License
+## Author
 
-Academic database coursework - Olist/NorthWind datasets retain their upstream licenses.
+**i222327** · [rohaan2802](https://github.com/rohaan2802)
