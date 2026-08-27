@@ -1,4 +1,4 @@
-# DB_DataAnalysis — Olist E-commerce T-SQL, ER Modeling, and Northwind
+# Data Analysis — Olist E-commerce T-SQL, ER Modeling, and Northwind
 
 Database coursework in **T-SQL (SQL Server)**: **Assignment #01** ER diagrams (draw.io), **Assignment #02** schema + `BULK INSERT` + analytical queries on the **Olist Brazilian e-commerce** dump, exported CSV/PNG result packs, and a separate **Northwind** sample-database script for extra practice.
 
